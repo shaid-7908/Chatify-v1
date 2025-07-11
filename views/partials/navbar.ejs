@@ -1,0 +1,63 @@
+<nav class="navbar navbar-expand-lg navbar-dark" style="background-color: var(--primary-color);">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">
+            <i class="bi bi-whatsapp"></i> WhatsApp Clone
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <% if (locals.user) { %>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/chats">
+                            <i class="bi bi-chat-dots"></i> Chats
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/chats/users">
+                            <i class="bi bi-people"></i> Users
+                        </a>
+                    </li>
+                    <% } %>
+            </ul>
+
+            <ul class="navbar-nav">
+                <% if (locals.user) { %>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                            data-bs-toggle="dropdown">
+                            <img src="<%= user.avatarUrl || '/images/default-avatar.png' %>" alt="Profile"
+                                class="avatar" style="width: 30px; height: 30px;">
+                            <%= user.username %>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/profile">
+                                    <i class="bi bi-person"></i> Profile
+                                </a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item" href="/auth/logout">
+                                    <i class="bi bi-box-arrow-right"></i> Logout
+                                </a></li>
+                        </ul>
+                    </li>
+                    <% } else { %>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/auth/login">
+                                <i class="bi bi-box-arrow-in-right"></i> Login
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/auth/register">
+                                <i class="bi bi-person-plus"></i> Register
+                            </a>
+                        </li>
+                        <% } %>
+            </ul>
+        </div>
+    </div>
+</nav>

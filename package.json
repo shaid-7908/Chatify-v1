@@ -1,7 +1,7 @@
 {
-  "name": "19-05-25-express-ejs-type",
+  "name": "chatify",
   "version": "1.0.0",
-  "description": "",
+  "description": "Real-time chat application with Express.js, EJS, MongoDB, and Socket.IO",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -9,7 +9,7 @@
     "build": "tsc",
     "start": "node dist/server.js"
   },
-  "keywords": [],
+  "keywords": ["chat", "chatify", "real-time", "express", "socket.io"],
   "author": "",
   "license": "ISC",
   "devDependencies": {
@@ -25,10 +25,12 @@
     "@types/nodemailer": "^6.4.17",
     "@types/passport": "^1.0.17",
     "@types/passport-local": "^1.0.38",
+    "@types/socket.io": "^3.0.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "aws-sdk": "^2.1691.0",
     "bcrypt": "^6.0.0",
     "connect-flash": "^0.1.1",
     "cookie-parser": "^1.4.7",
@@ -43,6 +45,7 @@
     "nodemailer": "^7.0.3",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
+    "socket.io": "^4.8.1",
     "zod": "^3.25.7"
   }
 }
