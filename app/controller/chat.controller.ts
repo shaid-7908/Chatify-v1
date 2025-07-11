@@ -11,14 +11,12 @@ export class ChatController {
    */
   public getChatList = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user?.userId
-    console.log('on get chat list')
     if (!userId) {
       sendError(res, "User not authenticated", null, STATUS_CODES.UNAUTHORIZED)
       return
     }
 
     const chatRooms = await ChatRepository.findUserChatRooms(userId)
-    console.log(chatRooms)
     sendSuccess(res, "Chat list retrieved successfully", chatRooms)
   })
 
@@ -39,9 +37,8 @@ export class ChatController {
       sendError(res, "Chat room not found", null, STATUS_CODES.NOT_FOUND)
       return
     }
-
     // Check if user is participant
-    const isParticipant = chatRoom.participants.some(p => p._id === userId)
+    const isParticipant = chatRoom.participants.some(p => p._id.toString() === userId)
     if (!isParticipant) {
       sendError(res, "Access denied", null, STATUS_CODES.FORBIDDEN)
       return

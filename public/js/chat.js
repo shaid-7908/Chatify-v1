@@ -126,7 +126,7 @@ class ChatManager {
 
     selectChat(chatId) {
         this.currentChatId = chatId;
-
+        console.log('on select chat', chatId)
         // Update active state
         $('.chat-item').removeClass('active');
         $(`.chat-item[data-chat-id="${chatId}"]`).addClass('active');
@@ -168,7 +168,7 @@ class ChatManager {
             chatName = `${otherUser.firstName} ${otherUser.lastName}`;
             status = otherUser.isOnline ? 'online' : 'last seen recently';
         }
-
+        console.log('on display chat details', chatName, status)        
         $('#currentChatName').html(`<i class="bi bi-chat"></i> ${chatName}`);
         $('#currentChatStatus').html(`<small>${status}</small>`);
     }
