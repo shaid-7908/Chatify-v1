@@ -8,65 +8,83 @@ interface AuthenticatedSocket extends Socket {
   username?: string
 }
 
+// Helper to parse cookies from a string
+function parseCookies(cookieHeader: string | undefined): Record<string, string> {
+  const cookies: Record<string, string> = {};
+  if (!cookieHeader) return cookies;
+  cookieHeader.split(';').forEach(cookie => {
+    const [name, ...rest] = cookie.trim().split('=');
+    cookies[name] = decodeURIComponent(rest.join('='));
+  });
+  return cookies;
+}
+
 export const setupSocketIO = (io: Server) => {
   // Authentication middleware
   io.use(async (socket: AuthenticatedSocket, next) => {
     try {
-      const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '')
-      
+      // Parse cookies from the handshake headers
+      const cookies = parseCookies(socket.handshake.headers.cookie);
+      const token = cookies['accessToken'];
+
       if (!token) {
-        return next(new Error('Authentication error'))
+        return next(new Error('Authentication error: No access token in cookies'));
       }
 
-      const decoded = jwt.verify(token, envConfig.JWT_SECRET) as any
-      const user = await UserModel.findById(decoded.userId).select('username')
-      
+      const decoded = jwt.verify(token, envConfig.JWT_SECRET) as any;
+      const user = await UserModel.findById(decoded.id || decoded.userId).select('username');
+
       if (!user) {
-        return next(new Error('User not found'))
+        return next(new Error('User not found'));
       }
 
-      socket.userId = decoded.userId
-      socket.username = user.username
-      next()
+      socket.userId = decoded.id || decoded.userId;
+      socket.username = user.username;
+      next();
     } catch (error) {
-      next(new Error('Authentication error'))
+      next(new Error('Authentication error: Invalid or expired token'));
     }
-  })
+  });
 
   io.on('connection', (socket: AuthenticatedSocket) => {
-    console.log(`User connected: ${socket.username}`)
+    console.log(`User connected: ${socket.username}`);
 
     // Update user online status
-    UserModel.findByIdAndUpdate(socket.userId, { 
-      isOnline: true, 
-      lastSeen: new Date() 
-    }).exec()
+    UserModel.findByIdAndUpdate(socket.userId, {
+      isOnline: true,
+      lastSeen: new Date()
+    }).exec();
 
     // Join user to their personal room
-    socket.join(`user_${socket.userId}`)
+    socket.join(`user_${socket.userId}`);
 
     // Handle joining chat rooms
     socket.on('joinRoom', (roomId: string) => {
-      socket.leaveAll()
-      socket.join(`room_${roomId}`)
-      socket.join(`user_${socket.userId}`)
-      console.log(`User ${socket.username} joined room: ${roomId}`)
-    })
+      // Leave all rooms except the user's personal room
+      for (const room of socket.rooms) {
+        if (room !== socket.id && room !== `user_${socket.userId}`) {
+          socket.leave(room);
+        }
+      }
+      socket.join(`room_${roomId}`);
+      socket.join(`user_${socket.userId}`);
+      console.log(`User ${socket.username} joined room: ${roomId}`);
+    });
 
     // Handle sending messages
     socket.on('sendMessage', (data: {
-      roomId: string
-      content: string
-      messageType: string
-      mediaUrl?: string
+      roomId: string;
+      content: string;
+      messageType: string;
+      mediaUrl?: string;
     }) => {
       socket.to(`room_${data.roomId}`).emit('newMessage', {
         ...data,
         sender: socket.userId,
         senderName: socket.username,
         timestamp: new Date()
-      })
-    })
+      });
+    });
 
     // Handle typing indicators
     socket.on('typing', (roomId: string) => {
@@ -74,16 +92,16 @@ export const setupSocketIO = (io: Server) => {
         userId: socket.userId,
         username: socket.username,
         roomId
-      })
-    })
+      });
+    });
 
     socket.on('stopTyping', (roomId: string) => {
       socket.to(`room_${roomId}`).emit('userStopTyping', {
         userId: socket.userId,
         username: socket.username,
         roomId
-      })
-    })
+      });
+    });
 
     // Handle message seen
     socket.on('messageSeen', (data: { messageId: string, roomId: string }) => {
@@ -91,20 +109,20 @@ export const setupSocketIO = (io: Server) => {
         messageId: data.messageId,
         seenBy: socket.userId,
         seenAt: new Date()
-      })
-    })
+      });
+    });
 
     // Handle disconnection
     socket.on('disconnect', async () => {
-      console.log(`User disconnected: ${socket.username}`)
-      
+      console.log(`User disconnected: ${socket.username}`);
+
       // Update user offline status
       if (socket.userId) {
         await UserModel.findByIdAndUpdate(socket.userId, {
           isOnline: false,
           lastSeen: new Date()
-        }).exec()
+        }).exec();
       }
-    })
-  })
+    });
+  });
 } 
