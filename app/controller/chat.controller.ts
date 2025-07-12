@@ -104,7 +104,7 @@ export class ChatController {
       return
     }
 
-    const isParticipant = chatRoom.participants.some(p => p._id === userId)
+    const isParticipant = chatRoom.participants.some(p => p._id.toString() === userId)
     if (!isParticipant) {
       sendError(res, "Access denied", null, STATUS_CODES.FORBIDDEN)
       return
@@ -133,6 +133,11 @@ export class ChatController {
     const messages = await ChatRepository.getRoomMessages(roomId, 1, 0)
     const messageWithSender = messages[0]
 
+    req.app.get('io')?.to(`room_${roomId}`).emit('newMessage', {
+  ...messageWithSender,
+  senderName: req.user?.username || 'Unknown',
+});
+
     sendSuccess(res, "Message sent successfully", messageWithSender, STATUS_CODES.CREATED)
   })
 
@@ -156,7 +161,7 @@ export class ChatController {
       return
     }
 
-    const isParticipant = chatRoom.participants.some(p => p._id === userId)
+    const isParticipant = chatRoom.participants.some(p => p._id.toString() === userId)
     if (!isParticipant) {
       sendError(res, "Access denied", null, STATUS_CODES.FORBIDDEN)
       return
