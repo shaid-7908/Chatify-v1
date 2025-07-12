@@ -4,6 +4,12 @@ import { UserRepository } from '../repository/user.repository'
 import { asyncHandler } from '../utils/async.hadler'
 import { sendError, sendSuccess } from '../utils/unified.response'
 import STATUS_CODES from '../utils/status.codes'
+import { Socket } from 'socket.io'
+
+interface AuthenticatedSocket extends Socket {
+  userId?: string
+  username?: string
+}
 
 export class ChatController {
   /**
@@ -133,10 +139,23 @@ export class ChatController {
     const messages = await ChatRepository.getRoomMessages(roomId, 1, 0)
     const messageWithSender = messages[0]
 
-    req.app.get('io')?.to(`room_${roomId}`).emit('newMessage', {
-  ...messageWithSender,
-  senderName: req.user?.username || 'Unknown',
-});
+    // Emit message to other users in the room (excluding sender)
+    const io = req.app.get('io')
+    if (io) {
+      // Get all sockets in the room and emit to everyone except the sender
+      const room = io.sockets.adapter.rooms.get(`room_${roomId}`)
+      if (room) {
+        room.forEach((socketId: string) => {
+          const socket = io.sockets.sockets.get(socketId) as AuthenticatedSocket
+          if (socket && socket.userId !== userId) {
+            socket.emit('newMessage', {
+              ...messageWithSender,
+              senderName: req.user?.username || 'Unknown',
+            })
+          }
+        })
+      }
+    }
 
     sendSuccess(res, "Message sent successfully", messageWithSender, STATUS_CODES.CREATED)
   })

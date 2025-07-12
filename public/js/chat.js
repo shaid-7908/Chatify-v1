@@ -273,7 +273,10 @@ class ChatManager {
             success: (response) => {
                 if (response.success) {
                     $('#messageText').val('');
-                    // Message will be added via Socket.IO
+                    // Display the message immediately for the sender
+                    const messageElement = this.createMessageElement(response.data);
+                    $('#messageContainer').append(messageElement);
+                    $('#messageContainer').scrollTop($('#messageContainer')[0].scrollHeight);
                 }
             }
         });
@@ -281,9 +284,13 @@ class ChatManager {
 
     handleNewMessage(message) {
         if (message.roomId === this.currentChatId) {
-            const messageElement = this.createMessageElement(message);
-            $('#messageContainer').append(messageElement);
-            $('#messageContainer').scrollTop($('#messageContainer')[0].scrollHeight);
+            // Check if message already exists to prevent duplicates
+            const existingMessage = $(`[data-message-id="${message._id}"]`);
+            if (existingMessage.length === 0) {
+                const messageElement = this.createMessageElement(message);
+                $('#messageContainer').append(messageElement);
+                $('#messageContainer').scrollTop($('#messageContainer')[0].scrollHeight);
+            }
         }
         // Update chat list to show new message
         this.loadChatList();
@@ -356,7 +363,15 @@ class ChatManager {
                         url: '/chats/message/send',
                         method: 'POST',
                         contentType: 'application/json',
-                        data: JSON.stringify(messageData)
+                        data: JSON.stringify(messageData),
+                        success: (response) => {
+                            if (response.success) {
+                                // Display the message immediately for the sender
+                                const messageElement = this.createMessageElement(response.data);
+                                $('#messageContainer').append(messageElement);
+                                $('#messageContainer').scrollTop($('#messageContainer')[0].scrollHeight);
+                            }
+                        }
                     });
                 }
             }
