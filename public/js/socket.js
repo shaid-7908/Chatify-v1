@@ -160,10 +160,12 @@ class SocketManager {
     }
 
     startTyping(roomId) {
+        console.log('SocketManager: Starting typing in room:', roomId);
         this.emit('typing', roomId);
     }
 
     stopTyping(roomId) {
+        console.log('SocketManager: Stopping typing in room:', roomId);
         this.emit('stopTyping', roomId);
     }
 

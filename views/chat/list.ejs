@@ -38,7 +38,8 @@
         .chat-container {
             display: flex;
             flex-direction: column;
-            height: calc(100vh - 56px);;
+            height: calc(100vh - 56px);
+            ;
         }
 
         .chat-body {
@@ -55,7 +56,7 @@
             display: flex;
             flex-direction: column;
         }
-        
+
 
         .chat-list {
             flex: 1;
@@ -167,6 +168,50 @@
             width: 30px;
             height: 30px;
         }
+
+        /* Typing indicator styles */
+        .typing-indicator {
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            align-self: flex-start;
+        }
+
+        .typing-dots {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .typing-dots span {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: #999;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dots span:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes typing {
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 
@@ -226,6 +271,8 @@
 
             <!-- Chat Window -->
             <div class="chat-main">
+                <!-- Typing indicator -->
+                
                 <div class="chat-header chat-header-user-info">
                     <h5 class="mb-0" id="currentChatName"><i class="bi bi-chat"></i> Select a chat</h5>
                     <div id="currentChatStatus"></div>
@@ -235,6 +282,7 @@
                         <i class="bi bi-chat-dots" style="font-size: 3rem;"></i>
                         <p class="mt-3">Select a chat to start messaging</p>
                     </div>
+                    
                 </div>
                 <div class="message-input" id="messageInput" style="display: none;">
                     <div class="input-group">
@@ -244,6 +292,8 @@
                             accept="image/*,video/*,audio/*,application/*">
                         <input type="text" class="form-control" id="messageText" placeholder="Type a message..." />
                         <button class="btn btn-success" id="sendBtn"><i class="bi bi-send"></i></button>
+                        <button class="btn btn-warning" id="testTypingBtn" title="Test typing indicator"><i
+                                class="bi bi-keyboard"></i></button>
                     </div>
                 </div>
             </div>

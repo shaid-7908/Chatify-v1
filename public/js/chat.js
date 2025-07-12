@@ -2,7 +2,6 @@
 class ChatManager {
     constructor() {
         this.currentChatId = null;
-        this.socket = null;
         this.typingTimeout = null;
         this.init();
     }
@@ -10,34 +9,45 @@ class ChatManager {
     init() {
         console.log('Initializing ChatManager...');
         console.log('Current user ID on init:', window.currentUserId);
-        this.initSocket();
         this.bindEvents();
         this.loadChatList();
         this.loadUsers();
+        
+        // Setup socket events after a short delay to ensure SocketManager is initialized
+        setTimeout(() => {
+            this.setupSocketEvents();
+        }, 200);
     }
 
-    initSocket() {
-        this.socket = io({
-            auth: {
-                token: this.getCookie('accessToken')
-            }
-        });
+    setupSocketEvents() {
+        if (window.socketManager) {
+            console.log('Setting up socket events with SocketManager');
+            
+            // Listen for new messages
+            window.socketManager.on('newMessage', (message) => {
+                console.log('New message received:', message);
+                this.handleNewMessage(message);
+            });
 
-        this.socket.on('newMessage', (message) => {
-            this.handleNewMessage(message);
-        });
+            // Listen for typing indicators
+            window.socketManager.on('userTyping', (data) => {
+                console.log('User typing event received:', data);
+                this.showTypingIndicator(data);
+            });
 
-        this.socket.on('userTyping', (data) => {
-            this.showTypingIndicator(data);
-        });
+            window.socketManager.on('userStopTyping', (data) => {
+                console.log('User stop typing event received:', data);
+                this.hideTypingIndicator();
+            });
 
-        this.socket.on('userStopTyping', (data) => {
-            this.hideTypingIndicator();
-        });
-
-        this.socket.on('messageSeenUpdate', (data) => {
-            this.updateMessageSeen(data);
-        });
+            // Listen for message seen updates
+            window.socketManager.on('messageSeenUpdate', (data) => {
+                console.log('Message seen update received:', data);
+                this.updateMessageSeen(data);
+            });
+        } else {
+            console.error('SocketManager not available');
+        }
     }
 
     bindEvents() {
@@ -60,6 +70,11 @@ class ChatManager {
 
         $('#userSearch').on('input', (e) => {
             this.filterUsers(e.target.value);
+        });
+
+        // Test typing button
+        $('#testTypingBtn').click(() => {
+            this.testTyping();
         });
     }
 
@@ -117,7 +132,7 @@ class ChatManager {
                             <h6 class="mb-0">${chatName}</h6>
                             ${unreadCount > 0 ? `<span class="unread-badge">${unreadCount}</span>` : ''}
                         </div>
-                        <small class="text-muted">${lastMessage}</small>
+                        <small  class="text-muted">${lastMessage}</small>
                     </div>
                 </div>
             </div>
@@ -125,6 +140,9 @@ class ChatManager {
     }
 
     selectChat(chatId) {
+        // Clear any existing typing indicator
+        this.hideTypingIndicator();
+        
         this.currentChatId = chatId;
         console.log('on select chat', chatId)
         // Update active state
@@ -136,7 +154,9 @@ class ChatManager {
         this.loadMessages(chatId);
 
         // Join room via Socket.IO
-        this.socket.emit('joinRoom', chatId);
+        if (window.socketManager) {
+            window.socketManager.joinRoom(chatId);
+        }
 
         // Show message input
         $('#messageInput').show();
@@ -169,7 +189,16 @@ class ChatManager {
             status = otherUser.isOnline ? 'online' : 'last seen recently';
         }
         console.log('on display chat details', chatName, status)        
-        $('#currentChatName').html(`<i class="bi bi-chat"></i> ${chatName}`);
+        $('#currentChatName').html(`<i class="bi bi-chat"></i> ${chatName} <div id="typingIndicator" class="typing-indicator" style="display: none;">
+                    <div class="d-flex align-items-center">
+                        <div class="typing-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                        <small class="text-muted ms-2 h-6" id="typingText">typing...</small>
+                    </div>
+                </div>`);
         $('#currentChatStatus').html(`<small>${status}</small>`);
     }
 
@@ -261,25 +290,45 @@ class ChatManager {
     }
 
     handleTyping() {
+        if (!this.currentChatId) return;
+        
+        console.log('Typing detected in chat:', this.currentChatId);
+        
         if (this.typingTimeout) {
             clearTimeout(this.typingTimeout);
         }
 
-        this.socket.emit('typing', this.currentChatId);
+        if (window.socketManager) {
+            window.socketManager.startTyping(this.currentChatId);
+        }
 
         this.typingTimeout = setTimeout(() => {
-            this.socket.emit('stopTyping', this.currentChatId);
+            if (window.socketManager) {
+                window.socketManager.stopTyping(this.currentChatId);
+            }
         }, 1000);
     }
 
     showTypingIndicator(data) {
+        console.log('Showing typing indicator:', data);
         if (data.roomId === this.currentChatId) {
-            $('#typingIndicator').text(`${data.username} is typing...`).show();
+            const typingText = data.username ? `${data.username} is typing...` : 'Someone is typing...';
+            $('#typingText').text(typingText);
+            $('#typingIndicator').show();
         }
     }
 
     hideTypingIndicator() {
+        console.log('Hiding typing indicator');
         $('#typingIndicator').hide();
+    }
+
+    updateMessageSeen(data) {
+        // Update message seen status in UI
+        const messageElement = document.querySelector(`[data-message-id="${data.messageId}"]`);
+        if (messageElement) {
+            messageElement.classList.add('seen');
+        }
     }
 
     uploadFile(file) {
@@ -396,9 +445,41 @@ class ChatManager {
         const parts = value.split(`; ${name}=`);
         if (parts.length === 2) return parts.pop().split(';').shift();
     }
+
+    cleanup() {
+        // Clear typing timeout
+        if (this.typingTimeout) {
+            clearTimeout(this.typingTimeout);
+        }
+        
+        // Leave current room if any
+        if (this.currentChatId && window.socketManager) {
+            window.socketManager.leaveRoom(this.currentChatId);
+        }
+    }
+
+    // Test method for debugging typing functionality
+    testTyping() {
+        if (this.currentChatId && window.socketManager) {
+            console.log('Testing typing functionality...');
+            window.socketManager.startTyping(this.currentChatId);
+            setTimeout(() => {
+                window.socketManager.stopTyping(this.currentChatId);
+            }, 2000);
+        } else {
+            console.error('Cannot test typing: no current chat or socket manager');
+        }
+    }
 }
 
 // Initialize chat manager when document is ready
 $(document).ready(function() {
     window.chatManager = new ChatManager();
+    
+    // Setup cleanup on page unload
+    $(window).on('beforeunload', function() {
+        if (window.chatManager) {
+            window.chatManager.cleanup();
+        }
+    });
 }); 

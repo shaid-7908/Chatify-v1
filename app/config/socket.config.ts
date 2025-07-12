@@ -60,15 +60,20 @@ export const setupSocketIO = (io: Server) => {
 
     // Handle joining chat rooms
     socket.on('joinRoom', (roomId: string) => {
+      console.log(`User ${socket.username} attempting to join room: ${roomId}`);
+      
       // Leave all rooms except the user's personal room
       for (const room of socket.rooms) {
         if (room !== socket.id && room !== `user_${socket.userId}`) {
           socket.leave(room);
+          console.log(`Left room: ${room}`);
         }
       }
+      
       socket.join(`room_${roomId}`);
       socket.join(`user_${socket.userId}`);
       console.log(`User ${socket.username} joined room: ${roomId}`);
+      console.log(`Current rooms for ${socket.username}:`, Array.from(socket.rooms));
     });
 
     // Handle sending messages
@@ -88,6 +93,7 @@ export const setupSocketIO = (io: Server) => {
 
     // Handle typing indicators
     socket.on('typing', (roomId: string) => {
+      console.log(`User ${socket.username} is typing in room: ${roomId}`);
       socket.to(`room_${roomId}`).emit('userTyping', {
         userId: socket.userId,
         username: socket.username,
@@ -96,6 +102,7 @@ export const setupSocketIO = (io: Server) => {
     });
 
     socket.on('stopTyping', (roomId: string) => {
+      console.log(`User ${socket.username} stopped typing in room: ${roomId}`);
       socket.to(`room_${roomId}`).emit('userStopTyping', {
         userId: socket.userId,
         username: socket.username,
