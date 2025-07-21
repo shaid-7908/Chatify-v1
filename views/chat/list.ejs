@@ -111,7 +111,16 @@
             overflow-y: auto;
             display: flex;
             flex-direction: column;
+            background-image: url('https://www.shutterstock.com/image-vector/social-media-sketch-vector-seamless-600nw-1660950727.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-blend-mode: overlay;
+            background-color: rgba(255, 255, 255, 0.5);
+            background-blend-mode: overlay;
         }
+
 
         .message-input {
             background-color: white;
@@ -126,6 +135,8 @@
 
         .message.incoming .message-content {
             background-color: var(--message-in);
+            box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
+            align-self: flex-end;
         }
 
         .message.outgoing {
@@ -289,7 +300,7 @@
                         <button class="btn btn-outline-secondary" id="attachBtn"><i
                                 class="bi bi-paperclip"></i></button>
                         <input type="file" id="fileInput" style="display: none;"
-                            accept="image/*,video/*,audio/*,application/*">
+                            accept="image/*,video/*,audio/*">
                         <input type="text" class="form-control" id="messageText" placeholder="Type a message..." />
                         <button class="btn btn-success" id="sendBtn"><i class="bi bi-send"></i></button>
                         <button class="btn btn-warning" id="testTypingBtn" title="Test typing indicator"><i

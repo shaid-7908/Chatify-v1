@@ -1,8 +1,10 @@
 import { Request, Response } from 'express'
 import AWS from 'aws-sdk'
 import { asyncHandler } from '../utils/async.hadler'
-import { ApiResponse } from '../utils/unified.response'
+//import { ApiResponse } from '../utils/unified.response'
+import { sendError } from '../utils/unified.response'
 import envConfig from '../config/env.config'
+import STATUS_CODES from '../utils/status.codes'
 
 // Configure AWS
 AWS.config.update({
@@ -17,16 +19,16 @@ export const uploadMessageMedia = asyncHandler(async (req: Request, res: Respons
   const userId = req.user?.userId
 
   if (!userId) {
-    throw new ApiResponse(401, "User not authenticated")
+    return sendError(res,"User not authenticated" ,null,STATUS_CODES.UNAUTHORIZED)
   }
 
   if (!req.file) {
-    throw new ApiResponse(400, "No file uploaded")
+    return sendError(res,"No file uploaded" ,null,STATUS_CODES.BAD_REQUEST)
   }
 
   const file = req.file
   const fileType = file.mimetype.split('/')[0] // image, video, audio, application
-
+  console.log(file)
   // Determine message type based on file type
   let messageType: "image" | "video" | "audio" | "file" = "file"
   if (fileType === "image") messageType = "image"
@@ -44,7 +46,6 @@ export const uploadMessageMedia = asyncHandler(async (req: Request, res: Respons
     Key: key,
     Body: file.buffer,
     ContentType: file.mimetype,
-    ACL: 'public-read'
   }
 
   try {
@@ -62,7 +63,7 @@ export const uploadMessageMedia = asyncHandler(async (req: Request, res: Respons
     })
   } catch (error) {
     console.error('S3 upload error:', error)
-    throw new ApiResponse(500, "Failed to upload file")
+    return sendError(res,"Failed to upload file" ,null,STATUS_CODES.INTERNAL_SERVER_ERROR)
   }
 })
 
@@ -70,18 +71,18 @@ export const uploadProfilePhoto = asyncHandler(async (req: Request, res: Respons
   const userId = req.user?.userId
 
   if (!userId) {
-    throw new ApiResponse(401, "User not authenticated")
+    return sendError(res,"User not authenticated" ,null,STATUS_CODES.UNAUTHORIZED)
   }
 
   if (!req.file) {
-    throw new ApiResponse(400, "No file uploaded")
+    return sendError(res,"No file uploaded" ,null,STATUS_CODES.BAD_REQUEST)
   }
 
   const file = req.file
 
   // Validate file type (only images allowed for profile photos)
   if (!file.mimetype.startsWith('image/')) {
-    throw new ApiResponse(400, "Only image files are allowed for profile photos")
+    return sendError(res,"Only image files are allowed for profile photos" ,null,STATUS_CODES.BAD_REQUEST)
   }
 
   // Generate unique filename
@@ -110,6 +111,6 @@ export const uploadProfilePhoto = asyncHandler(async (req: Request, res: Respons
     })
   } catch (error) {
     console.error('S3 upload error:', error)
-    throw new ApiResponse(500, "Failed to upload profile photo")
+    return sendError(res,"Failed to upload profile photo" ,null,STATUS_CODES.INTERNAL_SERVER_ERROR)
   }
 }) 
